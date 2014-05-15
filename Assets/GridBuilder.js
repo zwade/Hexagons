@@ -12,6 +12,7 @@ var build_on_start : boolean = false;
 function Start () {
 	if (build_on_start) {
 		BuildTriangularGrid( grid_rows );
+		OrientDiagonal();
 	}
 }
 
@@ -40,9 +41,10 @@ function BuildTriangularGrid( rows : int ) {
 function CreateCube( pos : Vector3) {
 	var cube : GameObject = Instantiate( CubePrefab );
 	cube.transform.position = pos;
+	cube.transform.parent = transform;
 }
 
 function OrientDiagonal(){
-	
+	transform.Rotate(new Vector3(-22.5, 45, -22.5));
 }
 
