@@ -5,6 +5,7 @@ var cube_size	: float = 1;
 var grid_rows	: int 	= 5;
 var build_on_start : boolean = false;
 
+var DaGrid : HexGrid;
 
 // dictionaries / tables to store grid so it can be accessed through
 // any Build_Grid methods should fill in these dictionaries
@@ -23,7 +24,7 @@ public class HexCoords {
 		this.y = y;
 	}
 	public function HexCoords(q:int, r:int , ctype : CoordType){
-		SetCoords(q, r, ctype);
+		setCoords(q, r, ctype);
 	}
 	public function HexCoords( coords3 : Vector3 ){
 		HexCoords(coords3.x, coords3.y);
@@ -31,10 +32,38 @@ public class HexCoords {
 	public function HexCoords( coords2 : Vector2 ){ 
 		HexCoords(coords2.x, coords2.y);
 	}
-	public function GetZ(){
+	
+	//should have the effect of making HexCoords with
+		//equal x and y coordinates be treated as equal by
+		//stuff such as Hashtable
+	public function ToString(){
+		return "[HexCoords:"+x+","+y+"]";
+	}
+	public function GetHashCode(){
+		return this.ToString().GetHashCode(); //muahaha cuz I totally payed attention in APCS
+	}
+	public function Equals( other : Object ){
+		if( typeof(other) != HexCoords ){
+			Debug.LogWarning("Comparing HexCoords to non-hexcoord object (" + other +").");
+			return super.Equals(other);
+		}
+		return this.x == (other as HexCoords).x && this.y == (other as HexCoords).y;
+		//alternatively, this.ToString == other.ToString
+	}
+	public function getZ(){
 		return -(x+y);
 	}
-	public function SetCoords(q:int, r:int, ctype : CoordType){
+	public function getPossibleNeighbors(){
+		var neighbors : ArrayList = ArrayList();
+		neighbors.Add( new HexCoords( x+1,	y ) );
+		neighbors.Add( new HexCoords( x,	y+1 ) );
+		neighbors.Add( new HexCoords( x-1,	y ) );
+		neighbors.Add( new HexCoords( x,	y-1 ) );
+		neighbors.Add( new HexCoords( x+1,	y+1 ) );
+		neighbors.Add( new HexCoords( x-1,	y-1 ) );
+		return neighbors;
+	}
+	public function setCoords(q:int, r:int, ctype : CoordType){
 		var zed : int;
 		switch( ctype ){	
 			case CoordType.EvenQ:
@@ -64,33 +93,24 @@ public class HexCoords {
 				break;
 		}
 	}
-	
-	public function SeeLookHere(){
-		//There is a difference between Debug.Log and print. They are different streams with different properties.
-		//Debug.Log is more guaranteed to show up in the Unity console.
-		print("yup");
-		Debug.Log("nope");
+	public function toCubeCoords(){
+		return new Vector3(x, y, getZ());
 	}
-	
-	public function ToCubeCoords(){
-		return new Vector3(x, y, GetZ());
-	}
-	
-	public function ToOtherCoords(ctype : CoordType){
+	public function toOtherCoords(ctype : CoordType){
 		var ret : Vector2;
 		switch ( ctype ) {
 			case CoordType.EvenQ:
-				ret = new Vector2(x, GetZ()+(x + (x&1))/2 );
+				ret = new Vector2(x, getZ()+(x + (x&1))/2 );
 				break;
 			case CoordType.OddQ:
-				ret = new Vector2(x, GetZ()+(x - (x&1))/2 );
+				ret = new Vector2(x, getZ()+(x - (x&1))/2 );
 				break;
 			case CoordType.EvenR:
-				ret = new Vector2(x + (GetZ() + (GetZ()&1)) / 2, GetZ() );
+				ret = new Vector2(x + (getZ() + (getZ()&1)) / 2, getZ() );
 				break;
 			case CoordType.OddR:
 				Debug.Log(4);
-				ret = new Vector2(x + (GetZ() - (GetZ()&1)) / 2, GetZ() );
+				ret = new Vector2(x + (getZ() - (getZ()&1)) / 2, getZ() );
 				break;
 			default:
 				Debug.Log("HexCoords: Expected an exotic type (got" + ctype + "). Returning axial.");
@@ -99,25 +119,54 @@ public class HexCoords {
 		}
 		return ret;
 	}
+}
+
+public class HexGrid{
+	var hextable : Hashtable;
+	public function HexGrid(){
+		hextable = Hashtable();
+	}
+	public function addHex( coords : HexCoords, item : Object ){
+		hextable.Add( coords, item );
+	}
+	public function getHex( coords : HexCoords ){
+		Debug.Log("trying to get at " + coords);
+		return hextable[coords];
+	}
+	public function getExistingNeighborsOf( coords : HexCoords ){
+		var possibles : ArrayList = coords.getPossibleNeighbors();
+		for( possibility in possibles ){
+			if( !hextable.ContainsKey(possibility) ){
+				possibles.Remove(possibility);
+			}
+		}
+		return possibles;
+	}
+	public function displayContents(){
+		for( var item : DictionaryEntry in hextable ){
+			Debug.Log( item.Key +"\t:"+ item.Value);
+		}
+	}
 	
 }
 
 
-
 function Awake () {
+	DaGrid = HexGrid();
 	if (build_on_start) {
-		BuildTriangularGrid( grid_rows );
+		BuildTriangularGrid( grid_rows, DaGrid );
 		OrientDiagonal();
 	}
 }
 
 function Update () {
-	if( Input.GetKeyDown( KeyCode.J)){
-		(new HexCoords(0, 0)).SeeLookHere();
+	if( Input.GetKeyDown(KeyCode.J)) {
+		DaGrid.displayContents();
+			Debug.Log(GetCube( new HexCoords(0, 0) ));
 	}
 }
 
-function BuildTriangularGrid( rows : int ) {
+function BuildTriangularGrid( rows : int, grid : HexGrid ) {
 	//needs to fill in reference dictionaries, see above
 
 	//builds back, up, and to the right
@@ -131,6 +180,7 @@ function BuildTriangularGrid( rows : int ) {
 			var yshift = row - xshift;
 //			Debug.Log("Creating cube at " + xshift + "," + yshift + "," + zshift);
 			var tempcube : GameObject = CreateCubeInGrid( new Vector3( xshift, yshift, zshift )  );
+			grid.addHex( new HexCoords(xshift, yshift), tempcube );
 		}
 	}
 }
@@ -147,8 +197,7 @@ function CreateCube( pos : Vector3 ) {
 }
 
 function GetCube( coords : HexCoords ){
-	//return cubecoords[coords];
-	Debug.Log("not yet implemented");
+	return DaGrid.getHex(coords);
 }
 
 function OrientDiagonal(){
