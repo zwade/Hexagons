@@ -4,7 +4,7 @@
 //Angle - X:45, Y:atan(1/sqrt(2))
 //Interval - Y:sqrt(2), X:sqrt(2)*cos(30)
 //Angle of Second Camera - 180-2*atan(sqrt(2))
-
+							//this is like 178.bleargh?
 var angle:float = 0;
 var dist:float = 10;
 
