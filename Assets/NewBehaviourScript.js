@@ -42,8 +42,8 @@ function Update () {
 	}
 	
 	if (isTLeft) {
-		if (angle >= 180-2*Mathf.Atan(Mathf.Sqrt(2))) {
-			angle = 180-2*Mathf.Atan(Mathf.Sqrt(2));
+		if (angle >= 180-2* Mathf.Rad2Deg 	*Mathf.Atan(Mathf.Sqrt(2))) {
+			angle = 180-2* Mathf.Rad2Deg 	*Mathf.Atan(Mathf.Sqrt(2));
 			isTLeft = false;
 		} else {
 			angle++;

@@ -45,7 +45,8 @@ function CreateCube( pos : Vector3) {
 }
 
 function OrientDiagonal(){
-	//transform.Rotate(new Vector3(-22.5, 45, -22.5));
+	// we probably want to rotate the camera, not the cubes, in the end
+	// though it doesn't really matter right now
 	
 	transform.RotateAround( transform.position, Vector3.up, 45 ); //[y axis by 45]
 	transform.RotateAround( transform.position, Vector3.right, -Mathf.Rad2Deg * Mathf.Atan(1/Mathf.Sqrt(2))  ); //[x axis by arctan(1/root(2)]
