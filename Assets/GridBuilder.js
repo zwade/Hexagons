@@ -45,6 +45,13 @@ function CreateCube( pos : Vector3) {
 }
 
 function OrientDiagonal(){
-	transform.Rotate(new Vector3(-22.5, 45, -22.5));
-}
+	//transform.Rotate(new Vector3(-22.5, 45, -22.5));
+	
+	transform.RotateAround( transform.position, Vector3.up, 45 ); //[y axis by 45]
+	transform.RotateAround( transform.position, Vector2.right, -45 ); //[x axis by -45]
+	//executing these two gets it aligned in one axis but not the other. Which axis is determined by order.
+	
+	print(2*Mathf.Atan(Mathf.Sqrt(2)));
+	
+}	
 
