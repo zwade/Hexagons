@@ -25,7 +25,7 @@ function Update () {
 	
 	transform.eulerAngles.y = angle;
 	
-	if (Input.GetKeyDown("space")) {
+	if (Input.GetKeyDown(KeyCode.Space)) {
 		if (isTLeft) {
 			isTLeft = false;
 			isTRight = true;

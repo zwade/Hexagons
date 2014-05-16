@@ -5,11 +5,14 @@ var cube_size	: float = 1;
 var grid_rows	: int 	= 5;
 var build_on_start : boolean = false;
 
+var cubecoords : Hashtable;
+
 // dictionaries / tables to store grid so it can be accessed through
 // any Build_Grid methods should fill in these dictionaries
 // multiple coordinate systems, see http://www.redblobgames.com/grids/hexagons/
 
-function Start () {
+function Awake () {
+	cubecoords = new Hashtable();
 	if (build_on_start) {
 		BuildTriangularGrid( grid_rows );
 		OrientDiagonal();
@@ -17,7 +20,9 @@ function Start () {
 }
 
 function Update () {
-	
+	if( Input.GetKeyDown( KeyCode.J)){
+		print(GetCube( new Vector3(0, 0, 0) ) );
+	}
 }
 
 function BuildTriangularGrid( rows : int ) {
@@ -33,7 +38,8 @@ function BuildTriangularGrid( rows : int ) {
 		for( var xshift : int = 0; xshift <= row; xshift++){
 			var yshift = row - xshift;
 			Debug.Log("Creating cube at " + xshift + "," + yshift + "," + zshift);
-			CreateCube( new Vector3( xshift, yshift, zshift ) * cube_size  );
+			var tempcube = CreateCube( new Vector3( xshift, yshift, zshift ) * cube_size  );
+			cubecoords.Add(new Vector3(xshift, yshift, zshift), tempcube);
 		}
 	}
 }
@@ -42,6 +48,11 @@ function CreateCube( pos : Vector3) {
 	var cube : GameObject = Instantiate( CubePrefab );
 	cube.transform.position = pos;
 	cube.transform.parent = transform;
+	return cube;
+}
+
+function GetCube( coords : Vector3){
+	return cubecoords[coords];
 }
 
 function OrientDiagonal(){
