@@ -4,7 +4,6 @@ var CubePrefab	: GameObject;
 var cube_size	: float = 1;
 var grid_rows	: int 	= 5;
 var build_on_start : boolean = false;
-var JTarget	:	Vector2;
 
 private var hex_size : float;
 
@@ -74,12 +73,12 @@ public class HexCoords {
 	}
 	public function getPossibleNeighbors(){
 		var neighbors : ArrayList = ArrayList();
-		neighbors.Add( new HexCoords( q+1,	r ) );
+		neighbors.Add( new HexCoords( q-1,	r+1 ) );
 		neighbors.Add( new HexCoords( q,	r+1 ) );
-		neighbors.Add( new HexCoords( q-1,	r ) );
+		neighbors.Add( new HexCoords( q+1,	r ) );
+		neighbors.Add( new HexCoords( q+1,	r-1 ) );
 		neighbors.Add( new HexCoords( q,	r-1 ) );
-		neighbors.Add( new HexCoords( q+1,	r+1 ) );
-		neighbors.Add( new HexCoords( q-1,	r-1 ) );
+		neighbors.Add( new HexCoords( q-1,	r ) );
 		return neighbors;
 	}
 	public function getHexDistanceTo( hex:HexCoords ){
@@ -221,33 +220,27 @@ public class HexGrid{
 }
 
 function Update () {
-	if( Input.GetKeyDown(KeyCode.J) ) {
+	if( Input.GetMouseButtonDown(0)) {
 		var mouseray : Ray = Camera.main.ScreenPointToRay( Input.mousePosition );
 		//Debug.Log( "mouse at " + Input.mousePosition.x +","+ Input.mousePosition.y );
-		//Debug.Log( "ray at " + mouseray.origin.x + "," + mouseray.origin.y );
+		Debug.Log( "ray at " + mouseray.origin.x + "," + mouseray.origin.y );
 		var floataxial : Vector2 = HexCoords.getAxialCoords(new Vector2(mouseray.origin.x, mouseray.origin.y), hex_size);
 		//Debug.Log( "axial coords: "+ floataxial);
-		
-		
 		var approxhex : HexCoords = HexCoords.roundToHex(floataxial);
 		Debug.Log( "closest hex: " + approxhex);
 		
-		/*
-		var targCoords : HexCoords = new HexCoords(JTarget.x, JTarget.y);
+		var targCoords : HexCoords = approxhex;
 		targCoords.getWorldAxisAlignedPosition(hex_size);
 		var target : GameObject = GetCube( targCoords );
 		Debug.Log( "target:"+ target );
 		var suppPos : Vector2 = targCoords.getWorldAxisAlignedPosition(hex_size);
-		Debug.DrawLine( new Vector3(suppPos.x, suppPos.y, -10), new Vector3(suppPos.x, suppPos.y, 10) );
 		if(target != null){
 			target.renderer.material.color = Color.black;
 			var neighs : ArrayList = DaGrid.getExistingNeighborsOf( targCoords );
 			for (nee in neighs){
 				(GetCube(nee) as GameObject).renderer.material.color = Color.gray;
-				var huhPos : Vector2 = (nee as HexCoords).getWorldAxisAlignedPosition(hex_size);
-				Debug.DrawLine( new Vector3(huhPos.x, huhPos.y, -10), new Vector3(huhPos.x, huhPos.y, 10) );
 			}
-		}*/
+		}
 	}
 	for( var hex : HexCoords in DaGrid.hextable.Keys ){
 			var huhPos : Vector2 = hex.getWorldAxisAlignedPosition(hex_size);
