@@ -7,8 +7,7 @@ var build_on_start : boolean = false;
 
 private var hex_size : float;
 
-var DaGrid : HexGrid;
-var DahGrid: HexGrid;
+var DahGrids : HexGrid[];
 
 var numgrids : int = 0; 
 
@@ -23,16 +22,49 @@ var numgrids : int = 0;
 
 function Awake () {
 	hex_size 	= cube_size * Mathf.Sqrt(6) / 3;
-	DaGrid		= HexGrid();
-	DahGrid		= HexGrid(); 
+	DahGrids = new HexGrid[2];
+	DahGrids[0]		= HexGrid();
+	DahGrids[1]		= HexGrid(); 
 	if (build_on_start) {
-		//BuildTriangularGrid( grid_rows, DaGrid );
-		BuildHexagonalGrid(grid_size, DahGrid);
+		var container1 : GameObject = BuildHexagonalGridOnPlane(grid_size, DahGrids[0], new PlaneEquation(1, 1, 1));
+		var container2 : GameObject = BuildHexagonalGridOnPlane(grid_size, DahGrids[1], new PlaneEquation(1, 1, -1));
+		container2.transform.position.z +=  2*(grid_size) * cube_size;
+		
 		OrientDiagonal();
-		BuildHexagonalGrid(grid_size, DaGrid);
-		OrientDiagonal();
+		//OrientToFace( BOTTOM_LEFT );
+		Debug.Log("did dat");
 	}
 }
+
+public class PlaneEquation{
+	public var wx : int;
+	public var wy : int;
+	public var wz : int;
+	// wx * x + wy * y + wz * z = 0
+	// wx, wy, and wz should be 1, 0, or -1
+	// :O
+	public function PlaneEquation(){
+		PlaneEquation(1, 1, 1);
+	}
+	public function PlaneEquation( wx:int, wy:int, wz:int ){
+		this.wx = wx;
+		this.wy = wy;
+		this.wz = wz;
+	}
+	public function getWeights(){
+		return new Vector3(wx, wy, wz);
+	}
+	
+	//uh someone help me math
+	// y = -((wx*x)+(wz*z))/wy
+	// ^^ is that right?
+	// I don't even know
+	public function getY(x : int, z : int){
+		//should be an integer
+		return -( wx * x + wz * z  ) / wy; 
+	}
+}
+
 
 public class HexCoords { 
 	public var q : int;
@@ -226,6 +258,7 @@ public class HexGrid{
 }
 
 function Update () {
+	
 	if( Input.GetMouseButtonDown(0) ) {
 		var mouseray : Ray = Camera.main.ScreenPointToRay( Input.mousePosition );
 		var floataxial : Vector2 = HexCoords.getAxialCoords(new Vector2(mouseray.origin.x, mouseray.origin.y), hex_size);
@@ -233,29 +266,40 @@ function Update () {
 		Debug.Log( "closest hex: " + approxhex);
 		
 		var targCoords : HexCoords = approxhex;
-		var target : GameObject = GetCube( targCoords );
-		Debug.Log( "target:"+ target );
-		var suppPos : Vector2 = targCoords.getWorldAxisAlignedPosition(hex_size);
+		var target : GameObject = GetCube( targCoords, 0 );
 		if(target != null){
 			//target.renderer.material.color = Color.black;
 			(target.GetComponent("DataCell") as DataCell).addVal(2);
-			var neighs : ArrayList = DaGrid.getExistingNeighborsOf( targCoords );
+			var neighs : ArrayList = DahGrids[0].getExistingNeighborsOf( targCoords );
 			for (nee in neighs){
 				//(GetCube(nee) as GameObject).renderer.material.color = Color.gray;
-				((GetCube(nee) as GameObject).GetComponent("DataCell") as DataCell).addVal(1);
+				((GetCube(nee, 0) as GameObject).GetComponent("DataCell") as DataCell).addVal(1);
+			}
+		}
+		var target2 : GameObject = GetCube( targCoords, 1 );
+		if(target2 != null){
+			//target.renderer.material.color = Color.black;
+			(target2.GetComponent("DataCell") as DataCell).addVal(2);
+			var neighs2 : ArrayList = DahGrids[1].getExistingNeighborsOf( targCoords );
+			for (nee in neighs2){
+				//(GetCube(nee) as GameObject).renderer.material.color = Color.gray;
+				((GetCube(nee, 1) as GameObject).GetComponent("DataCell") as DataCell).addVal(1);
 			}
 		}
 	}
-	for( var hex : HexCoords in DaGrid.hextable.Keys ){
+	
+	if( Input.GetMouseButtonDown(1)){
+		OrientToFace( BOTTOM_LEFT );
+	}
+	
+	for( var hex : HexCoords in DahGrids[0].hextable.Keys ){
 			var huhPos : Vector2 = hex.getWorldAxisAlignedPosition(hex_size);
 			Debug.DrawLine( new Vector3(huhPos.x, huhPos.y, -3), new Vector3(huhPos.x, huhPos.y, 3), new Color(0, hex.r*1.0/grid_size, 0) );
 	}
 }
 
-//nom!
-
-function BuildHexagonalGrid( size : int, grid : HexGrid ){
-	//var gridContainer : GameObject = new GameObject("Grid Container", );
+/*function BuildHexagonalGrid( size : int, grid : HexGrid ){
+	var gridContainer : GameObject = new GameObject("Grid Container");
 
 	var cubecount : int = 0;
 	for( var z : int = -size*2; z < size*2; z++){
@@ -264,34 +308,80 @@ function BuildHexagonalGrid( size : int, grid : HexGrid ){
 			if( Mathf.Abs(y) > size || Mathf.Abs(x) > size || Mathf.Abs(z) > size){
 				continue;
 			}
-			var tempcube : GameObject = CreateCubeInGrid( new Vector3( x, y, z )  );
+			var tempcube : GameObject = CreateCubeInGrid( new Vector3( x, y, z ), gridContainer  );
 			tempcube.name = "Cube"+cubecount;
 			cubecount++;
 			grid.addHex( new HexCoords(x, y), tempcube );
 		}
 	}
+	numgrids ++;
+	gridContainer.transform.parent = this.transform;
+	return gridContainer;
+}*/
+
+function BuildHexagonalGridOnPlane( size : int, grid : HexGrid, planeE : PlaneEquation ){
+	var gridContainer : GameObject = new GameObject("Grid Container");
+	var cubecount : int = 0;
+	for( var z : int = -size*2; z < size*2; z++){
+		for( var x : int = -size*2; x < size*2; x++){
+			var y = planeE.getY(x, z);
+			
+			if( Mathf.Abs(y) > size || Mathf.Abs(x) > size || Mathf.Abs(z) > size){
+				continue;
+			}
+			var tempcube : GameObject = CreateCubeInGrid( new Vector3( x, y, z ), gridContainer  );
+			tempcube.name = "Cube"+cubecount;
+			cubecount++;
+			grid.addHex( new HexCoords(x, y), tempcube );
+		}
+	}
+	numgrids ++;
+	gridContainer.transform.parent = this.transform;
+	return gridContainer;
 }
 
-function CreateCubeInGrid( cubecoords : Vector3 ){
-	return CreateCube(cubecoords * cube_size);
+function CreateCubeInGrid( cubecoords : Vector3, container : GameObject ){
+	return CreateCube(cubecoords * cube_size, container);
 }
 
-function CreateCube( pos : Vector3 ) {
+function CreateCube( pos : Vector3, container : GameObject ) {
 	var cube : GameObject = Instantiate( CubePrefab, Vector3.zero, Quaternion.identity );
 	cube.transform.position = pos;
-	cube.transform.parent = transform;
+	cube.transform.parent = container.transform;
 	return cube;
 }
 
-function GetCube( coords : HexCoords ){
-	return DaGrid.getHex(coords);
+function GetCube( coords : HexCoords, grid : int ){
+	return DahGrids[grid].getHex(coords);
 }
 
+function OrientGridContainer( container : GameObject ){
+	//probably don't want to use anymore
+	container.transform.RotateAround( transform.position, Vector3.up, -45 );
+	container.transform.RotateAround( transform.position, Vector3.right, Mathf.Rad2Deg * Mathf.Atan(1/Mathf.Sqrt(2))  ); //[x axis by arctan(1/root(2)]
+}
+
+
 function OrientDiagonal(){
-	// we probably want to rotate the camera, not the cubes, in the end
-	// though it doesn't really matter right now
 	transform.RotateAround( transform.position, Vector3.up, -45 ); //[y axis by 45]
 	transform.RotateAround( transform.position, Vector3.right, Mathf.Rad2Deg * Mathf.Atan(1/Mathf.Sqrt(2))  ); //[x axis by arctan(1/root(2)]
+}
 
-}	
+final var BOTTOM_LEFT : int = 1;
+
+function OrientToFace( face : int ){
+	switch(face){
+		//assumes camera is viewing one face correctly 
+		//rotates grid system so a new face is shown correctly
+		case BOTTOM_LEFT:
+			//rotate so the bottom left face is now flush
+			//should spin syster up and to the right, 30 degrees? 60?
+			
+			//evidently not working
+			transform.RotateAround( transform.position, new Vector3(Mathf.Sqrt(3), -1, 0), 5 );
+			break;
+		default:
+			Debug.Log("unrecognized face");
+	}
+}
 
