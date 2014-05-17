@@ -5,26 +5,43 @@ var cube_size	: float = 1;
 var grid_rows	: int 	= 5;
 var build_on_start : boolean = false;
 var JTarget	:	Vector2;
+
+private var hex_size : float;
+
 var DaGrid : HexGrid;
+
+// [s] is the side length of the real cube
+// [size], side length of the projected hexagon,
+// is equal to Sqrt(6)/3 * [s]
+// derived from [s] * cos( arctan( 1 / Sqrt(2) ) )
 
 // dictionaries / tables to store grid so it can be accessed through
 // any Build_Grid methods should fill in these dictionaries
 // multiple coordinate systems, see http://www.redblobgames.com/grids/hexagons/
 
+function Awake () {
+	hex_size = cube_size * Mathf.Sqrt(6) / 3;
+	DaGrid = HexGrid();
+	if (build_on_start) {
+		BuildTriangularGrid( grid_rows, DaGrid );
+		OrientDiagonal();
+	}
+}
+
 public class HexCoords { 
-	public var x : int;
-	public var y : int;
+	public var q : int;
+	public var r : int;
 	public enum CoordType { Axial, EvenQ, OddQ, EvenR, OddR };
 	
 	public function HexCoords(){
 		HexCoords(0,0);
 	}
-	public function HexCoords(x:int, y:int){
-		this.x = x;
-		this.y = y;
+	public function HexCoords(q:int, r:int){
+		this.q = q;
+		this.r = r;
 	}
-	public function HexCoords(q:int, r:int , ctype : CoordType){
-		setCoords(q, r, ctype);
+	public function HexCoords(a:int, b:int , ctype : CoordType){
+		setCoords(a, b, ctype);
 	}
 	public function HexCoords( coords3 : Vector3 ){
 		HexCoords(coords3.x, coords3.y);
@@ -37,7 +54,7 @@ public class HexCoords {
 		//equal x and y coordinates be treated as equal by
 		//stuff such as Hashtable
 	public function ToString(){
-		return "[HexCoords:"+x+","+y+"]";
+		return "[HexCoords:"+q+","+r+"]";
 	}
 	public function GetHashCode(){
 		return this.ToString().GetHashCode(); //muahaha cuz I totally payed attention in APCS
@@ -47,56 +64,69 @@ public class HexCoords {
 			Debug.LogWarning("Comparing HexCoords to non-hexcoord object (" + other +").");
 			return super.Equals(other);
 		}
-		return this.x == (other as HexCoords).x && this.y == (other as HexCoords).y;
+		return this.q == (other as HexCoords).q && this.r == (other as HexCoords).r;
 		//alternatively, this.ToString == other.ToString
 	}
 	public function getZ(){
-		return -(x+y);
+		//not always technically Z axis
+		//third coordinate to finish (q + r + zed = 0) 
+		return -(q+r);
 	}
 	public function getPossibleNeighbors(){
 		var neighbors : ArrayList = ArrayList();
-		neighbors.Add( new HexCoords( x+1,	y ) );
-		neighbors.Add( new HexCoords( x,	y+1 ) );
-		neighbors.Add( new HexCoords( x-1,	y ) );
-		neighbors.Add( new HexCoords( x,	y-1 ) );
-		neighbors.Add( new HexCoords( x+1,	y+1 ) );
-		neighbors.Add( new HexCoords( x-1,	y-1 ) );
+		neighbors.Add( new HexCoords( q+1,	r ) );
+		neighbors.Add( new HexCoords( q,	r+1 ) );
+		neighbors.Add( new HexCoords( q-1,	r ) );
+		neighbors.Add( new HexCoords( q,	r-1 ) );
+		neighbors.Add( new HexCoords( q+1,	r+1 ) );
+		neighbors.Add( new HexCoords( q-1,	r-1 ) );
 		return neighbors;
 	}
-	public function setCoords(q:int, r:int, ctype : CoordType){
+	public function getHexDistanceTo( hex:HexCoords ){
+		return (Mathf.Abs(this.q - hex.q) + Mathf.Abs(this.q - hex.r)
+          + Mathf.Abs(this.q + this.r - hex.q - hex.r)) ;
+	}
+	public function getWorldAxisAlignedPosition( size : float ){
+		//xy coordinates for where to find the hex, projected unto 2d
+		var x : float =size * Mathf.Sqrt(3)*(q - (r/2.0)); //Mathf.Sqrt(3) * (q - r/2); // Mathf.Sqrt(2)*size*q; //this one seems at least a little right
+		var y : float =size * (3.0/2.0 * r);				//Mathf.Sqrt(2)*Mathf.Cos(30)*size*r;
+		return Vector2(x, y);
+	}
+	
+	public function setCoords(cq:int, cr:int, ctype : CoordType){
 		var zed : int;
 		switch( ctype ){	
 			case CoordType.EvenQ:
-				this.x = q;
-				zed = r - (q + (q&1)) / 2;
-				this.y = -(x+zed);
+				this.q = cq;
+				zed = cr - (cq + (cq&1)) / 2;
+				this.r = -(this.q+zed);
 				break;
 			case CoordType.OddQ:
-				this.x = q;
-				zed = r - (q - (q&1)) / 2;
-				this.y = -(x+zed);
+				this.q = cq;
+				zed = cr - (cq - (cq&1)) / 2;
+				this.r = -(this.q+zed);
 				break;
 			case CoordType.EvenR:
-				this.x = q - (r + (r&1)) / 2;
-				zed = r;
-				this.y = -(x+zed);
+				this.q = cq - (cr + (cr&1)) / 2;
+				zed = cr;
+				this.r = -(this.q+zed);
 				break;
 			case CoordType.OddR:
-				this.x = q - (r - (r&1)) / 2;
-				zed = r;
-				this.y = -(x+zed);
+				this.q = cq - (cr - (cr&1)) / 2;
+				zed = cr;
+				this.r = -(this.q+zed);
 				break;
 			default:
 				Debug.Log("HexCoords: Expected an exotic type (got" + ctype + "). Setting as axial.");
-				this.x = q;
-				this.y = r;
+				this.q = cq;
+				this.r = cr;
 				break;
 		}
 	}
-	public function toCubeCoords(){
+	/*public function toCubeCoords(){
 		return new Vector3(x, y, getZ());
-	}
-	public function toOtherCoords(ctype : CoordType){
+	}*/
+	/*public function toOtherCoords(ctype : CoordType){
 		var ret : Vector2;
 		switch ( ctype ) {
 			case CoordType.EvenQ:
@@ -118,7 +148,7 @@ public class HexCoords {
 				break;
 		}
 		return ret;
-	}
+	}*/
 }
 
 public class HexGrid{
@@ -152,25 +182,34 @@ public class HexGrid{
 }
 
 
-function Awake () {
-	DaGrid = HexGrid();
-	if (build_on_start) {
-		BuildTriangularGrid( grid_rows, DaGrid );
-		OrientDiagonal();
-	}
-}
+
 
 function Update () {
-	if( Input.GetKeyDown(KeyCode.J)) {
-		DaGrid.displayContents();
-		var target : GameObject = GetCube( new HexCoords(JTarget.x, JTarget.y) );
+	if( Input.GetMouseButtonDown(0)) {
+		Debug.Log(Camera.main.ScreenPointToRay( Input.mousePosition ));
+		
+		
+		//DaGrid.displayContents();
+		var targCoords : HexCoords = new HexCoords(JTarget.x, JTarget.y);
+		
+		targCoords.getWorldAxisAlignedPosition(hex_size);
+		
+		var target : GameObject = GetCube( targCoords );
+		
 		Debug.Log( "target:"+ target );
+		
+		var suppPos : Vector2 = targCoords.getWorldAxisAlignedPosition(hex_size);
+		Debug.DrawLine( new Vector3(suppPos.x, suppPos.y, -10), new Vector3(suppPos.x, suppPos.y, 10) );
+		
 		if(target != null){
 			target.renderer.material.color = Color.black;
-			var neighs : ArrayList = DaGrid.getExistingNeighborsOf(new HexCoords(JTarget.x, JTarget.y));
+			var neighs : ArrayList = DaGrid.getExistingNeighborsOf( targCoords );
 			for (nee in neighs){
-				Debug.Log(nee);
+				//Debug.Log(nee);
 				(GetCube(nee) as GameObject).renderer.material.color = Color.gray;
+				
+				var huhPos : Vector2 = (nee as HexCoords).getWorldAxisAlignedPosition(0.8);
+				Debug.DrawLine( new Vector3(huhPos.x, huhPos.y, -10), new Vector3(huhPos.x, huhPos.y, 10) );
 			}
 		}
 	}
@@ -191,6 +230,13 @@ function BuildTriangularGrid( rows : int, grid : HexGrid ) {
 			cubes++;
 			grid.addHex( new HexCoords(zshift, yshift), tempcube );
 		}
+		
+		//currently, hex grid is like this:
+		//axial
+		//q is z coord
+		//r is y coord
+		//+q runs straight right
+		//+r runs up to the left
 	}
 }
 
