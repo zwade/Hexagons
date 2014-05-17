@@ -164,12 +164,14 @@ function Update () {
 	if( Input.GetKeyDown(KeyCode.J)) {
 		DaGrid.displayContents();
 		var target : GameObject = GetCube( new HexCoords(JTarget.x, JTarget.y) );
-		Debug.Log( "found target:"+ target );
-		target.renderer.material.color = Color.black;
-		var neighs : ArrayList = DaGrid.getExistingNeighborsOf(new HexCoords(3, 1));
-		for (nee in neighs){
-			Debug.Log(nee);
-			(GetCube(nee) as GameObject).renderer.material.color = Color.gray;
+		Debug.Log( "target:"+ target );
+		if(target != null){
+			target.renderer.material.color = Color.black;
+			var neighs : ArrayList = DaGrid.getExistingNeighborsOf(new HexCoords(JTarget.x, JTarget.y));
+			for (nee in neighs){
+				Debug.Log(nee);
+				(GetCube(nee) as GameObject).renderer.material.color = Color.gray;
+			}
 		}
 	}
 }
