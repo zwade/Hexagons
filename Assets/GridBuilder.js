@@ -90,9 +90,45 @@ public class HexCoords {
 		//xy coordinates for where to find the hex, projected unto 2d
 		var x : float =size * Mathf.Sqrt(3)*(q - (r/2.0)); //Mathf.Sqrt(3) * (q - r/2); // Mathf.Sqrt(2)*size*q; //this one seems at least a little right
 		var y : float =size * (3.0/2.0 * r);				//Mathf.Sqrt(2)*Mathf.Cos(30)*size*r;
-		return Vector2(x, y);
+		return new Vector2(x, y);
 	}
+	public static function getAxialCoords( alignedCoords : Vector2, size : float ){
+		//takes rectangular coords, like mouse pos
+		var taq : float = (1.0/3.0*Mathf.Sqrt(3.0) * alignedCoords.y - 1.0/3.0 * alignedCoords.x) / size;
+		var tar : float = 2.0/3.0 * alignedCoords.y / size;
+		return new Vector2(taq, tar);
+	}
+	public static function roundToHex( axialPos : Vector2 ){
+		// nearest hex for given float axial coords
+		// can take the output of getAxialCoords
+		var az : float	= calcZed(axialPos);
+		var rx : int	= Mathf.Round(axialPos.x);
+		var ry : int	= Mathf.Round(axialPos.y);
+		var rz : int	= Mathf.Round(az);
+		
+		var xdiff : float = Mathf.Abs( rx - axialPos.x );
+		var ydiff : float = Mathf.Abs( ry - axialPos.y );
+		var zdiff : float = Mathf.Abs( rz - az);
+		
+		// x + y + z = 0, fixing if that's not the case
+		if( xdiff > ydiff && xdiff > zdiff ) {
+			rx = -(ry + rz);
+		}
+		else if( ydiff > zdiff ) {
+			ry = -(rx + rz);
+		}
+		else {
+			rz = -(rx + ry);
+		}
+		return new HexCoords(rx, ry);
 	
+	}
+	public static function calcZed(cx:float, cy:float){
+		return -(cx + cy);
+	}
+	public static function calcZed(cv : Vector2){
+		return -(cv.x + cv.y);
+	}
 	public function setCoords(cq:int, cr:int, ctype : CoordType){
 		var zed : int;
 		switch( ctype ){	
@@ -163,6 +199,9 @@ public class HexGrid{
 		//Debug.Log("trying to get at " + coords);
 		return hextable[coords];
 	}
+	public function hexExists( coords : HexCoords ){
+		return hextable.ContainsKey(coords);
+	}
 	public function getExistingNeighborsOf( coords : HexCoords ){
 		var possibles : ArrayList = coords.getPossibleNeighbors();
 		var definites : ArrayList = new ArrayList();
@@ -181,37 +220,38 @@ public class HexGrid{
 	
 }
 
-
-
-
 function Update () {
-	if( Input.GetMouseButtonDown(0)) {
-		Debug.Log(Camera.main.ScreenPointToRay( Input.mousePosition ));
+	if( Input.GetKeyDown(KeyCode.J) ) {
+		var mouseray : Ray = Camera.main.ScreenPointToRay( Input.mousePosition );
+		Debug.Log( "mouse at " + Input.mousePosition.x +","+ Input.mousePosition.y );
+		Debug.Log( "ray at " + mouseray.origin.x + "," + mouseray.origin.y );
+		var floataxial : Vector2 = HexCoords.getAxialCoords(new Vector2(mouseray.origin.x, mouseray.origin.y), hex_size);
+		Debug.Log( "axial coords: "+ floataxial);
 		
-		
-		//DaGrid.displayContents();
+		/*
+		var approxhex : HexCoords = HexCoords.roundToHex(floataxial);
+		Debug.Log( "closest hex: " + approxhex);
+		*/
+		/*
 		var targCoords : HexCoords = new HexCoords(JTarget.x, JTarget.y);
-		
 		targCoords.getWorldAxisAlignedPosition(hex_size);
-		
 		var target : GameObject = GetCube( targCoords );
-		
 		Debug.Log( "target:"+ target );
-		
 		var suppPos : Vector2 = targCoords.getWorldAxisAlignedPosition(hex_size);
 		Debug.DrawLine( new Vector3(suppPos.x, suppPos.y, -10), new Vector3(suppPos.x, suppPos.y, 10) );
-		
 		if(target != null){
 			target.renderer.material.color = Color.black;
 			var neighs : ArrayList = DaGrid.getExistingNeighborsOf( targCoords );
 			for (nee in neighs){
-				//Debug.Log(nee);
 				(GetCube(nee) as GameObject).renderer.material.color = Color.gray;
-				
-				var huhPos : Vector2 = (nee as HexCoords).getWorldAxisAlignedPosition(0.8);
+				var huhPos : Vector2 = (nee as HexCoords).getWorldAxisAlignedPosition(hex_size);
 				Debug.DrawLine( new Vector3(huhPos.x, huhPos.y, -10), new Vector3(huhPos.x, huhPos.y, 10) );
 			}
-		}
+		}*/
+	}
+	for( var hex : HexCoords in DaGrid.hextable.Keys ){
+			var huhPos : Vector2 = hex.getWorldAxisAlignedPosition(hex_size);
+			Debug.DrawLine( new Vector3(huhPos.x, huhPos.y, -3), new Vector3(huhPos.x, huhPos.y, 3), Color.red );
 	}
 }
 
