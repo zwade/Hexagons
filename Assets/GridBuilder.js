@@ -88,13 +88,13 @@ public class HexCoords {
 	}
 	public function getWorldAxisAlignedPosition( size : float ){
 		//xy coordinates for where to find the hex, projected unto 2d
-		var x : float =size * Mathf.Sqrt(3)*(q - (r/2.0)); //Mathf.Sqrt(3) * (q - r/2); // Mathf.Sqrt(2)*size*q; //this one seems at least a little right
+		var x : float =size * Mathf.Sqrt(3)*(q + (r/2.0)); //Mathf.Sqrt(3) * (q - r/2); // Mathf.Sqrt(2)*size*q; //this one seems at least a little right
 		var y : float =size * (3.0/2.0 * r);				//Mathf.Sqrt(2)*Mathf.Cos(30)*size*r;
 		return new Vector2(x, y);
 	}
 	public static function getAxialCoords( alignedCoords : Vector2, size : float ){
 		//takes rectangular coords, like mouse pos
-		var taq : float = (1.0/3.0*Mathf.Sqrt(3.0) * alignedCoords.y - 1.0/3.0 * alignedCoords.x) / size;
+		var taq : float = (1.0/3.0*Mathf.Sqrt(3.0) * alignedCoords.x - 1.0/3.0 * alignedCoords.y) / size;
 		var tar : float = 2.0/3.0 * alignedCoords.y / size;
 		return new Vector2(taq, tar);
 	}
@@ -223,15 +223,15 @@ public class HexGrid{
 function Update () {
 	if( Input.GetKeyDown(KeyCode.J) ) {
 		var mouseray : Ray = Camera.main.ScreenPointToRay( Input.mousePosition );
-		Debug.Log( "mouse at " + Input.mousePosition.x +","+ Input.mousePosition.y );
-		Debug.Log( "ray at " + mouseray.origin.x + "," + mouseray.origin.y );
+		//Debug.Log( "mouse at " + Input.mousePosition.x +","+ Input.mousePosition.y );
+		//Debug.Log( "ray at " + mouseray.origin.x + "," + mouseray.origin.y );
 		var floataxial : Vector2 = HexCoords.getAxialCoords(new Vector2(mouseray.origin.x, mouseray.origin.y), hex_size);
-		Debug.Log( "axial coords: "+ floataxial);
+		//Debug.Log( "axial coords: "+ floataxial);
 		
-		/*
+		
 		var approxhex : HexCoords = HexCoords.roundToHex(floataxial);
 		Debug.Log( "closest hex: " + approxhex);
-		*/
+		
 		/*
 		var targCoords : HexCoords = new HexCoords(JTarget.x, JTarget.y);
 		targCoords.getWorldAxisAlignedPosition(hex_size);
@@ -251,7 +251,7 @@ function Update () {
 	}
 	for( var hex : HexCoords in DaGrid.hextable.Keys ){
 			var huhPos : Vector2 = hex.getWorldAxisAlignedPosition(hex_size);
-			Debug.DrawLine( new Vector3(huhPos.x, huhPos.y, -3), new Vector3(huhPos.x, huhPos.y, 3), Color.red );
+			Debug.DrawLine( new Vector3(huhPos.x, huhPos.y, -3), new Vector3(huhPos.x, huhPos.y, 3), new Color(0, hex.r*1.0/grid_rows, 0) );
 	}
 }
 
@@ -268,15 +268,15 @@ function BuildTriangularGrid( rows : int, grid : HexGrid ) {
 			var tempcube : GameObject = CreateCubeInGrid( new Vector3( xshift, yshift, zshift )  );
 			tempcube.name = "Cube"+cubes;
 			cubes++;
-			grid.addHex( new HexCoords(zshift, yshift), tempcube );
+			grid.addHex( new HexCoords(xshift, yshift), tempcube );
 		}
 		
 		//currently, hex grid is like this:
 		//axial
-		//q is z coord
+		//q is x coord
 		//r is y coord
 		//+q runs straight right
-		//+r runs up to the left
+		//+r runs up to the right
 	}
 }
 
