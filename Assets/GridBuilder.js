@@ -4,7 +4,7 @@ var CubePrefab	: GameObject;
 var cube_size	: float = 1;
 var grid_rows	: int 	= 5;
 var build_on_start : boolean = false;
-
+var JTarget	:	Vector2;
 var DaGrid : HexGrid;
 
 // dictionaries / tables to store grid so it can be accessed through
@@ -130,17 +130,18 @@ public class HexGrid{
 		hextable.Add( coords, item );
 	}
 	public function getHex( coords : HexCoords ){
-		Debug.Log("trying to get at " + coords);
+		//Debug.Log("trying to get at " + coords);
 		return hextable[coords];
 	}
 	public function getExistingNeighborsOf( coords : HexCoords ){
 		var possibles : ArrayList = coords.getPossibleNeighbors();
+		var definites : ArrayList = new ArrayList();
 		for( possibility in possibles ){
-			if( !hextable.ContainsKey(possibility) ){
-				possibles.Remove(possibility);
+			if( hextable.ContainsKey(possibility) ){
+				definites.Add(possibility);
 			}
 		}
-		return possibles;
+		return definites;
 	}
 	public function displayContents(){
 		for( var item : DictionaryEntry in hextable ){
@@ -162,25 +163,31 @@ function Awake () {
 function Update () {
 	if( Input.GetKeyDown(KeyCode.J)) {
 		DaGrid.displayContents();
-			Debug.Log(GetCube( new HexCoords(0, 0) ));
+		var target : GameObject = GetCube( new HexCoords(JTarget.x, JTarget.y) );
+		Debug.Log( "found target:"+ target );
+		target.renderer.material.color = Color.black;
+		var neighs : ArrayList = DaGrid.getExistingNeighborsOf(new HexCoords(3, 1));
+		for (nee in neighs){
+			Debug.Log(nee);
+			(GetCube(nee) as GameObject).renderer.material.color = Color.gray;
+		}
 	}
 }
 
 function BuildTriangularGrid( rows : int, grid : HexGrid ) {
-	//needs to fill in reference dictionaries, see above
-
-	//builds back, up, and to the right
-	//following an x+y+z=0 pattern
+	
 	var firstPos : Vector3 = transform.position;
+	var cubes : int = 0;
 	for( var row : int = 0; row < rows; row++ ) {
 		//z coordinate is the row
 		//x + y coordinates should sum to equal row
 		var zshift = row;
 		for( var xshift : int = 0; xshift <= row; xshift++){
 			var yshift = row - xshift;
-//			Debug.Log("Creating cube at " + xshift + "," + yshift + "," + zshift);
 			var tempcube : GameObject = CreateCubeInGrid( new Vector3( xshift, yshift, zshift )  );
-			grid.addHex( new HexCoords(xshift, yshift), tempcube );
+			tempcube.name = "Cube"+cubes;
+			cubes++;
+			grid.addHex( new HexCoords(zshift, yshift), tempcube );
 		}
 	}
 }
@@ -190,7 +197,7 @@ function CreateCubeInGrid( cubecoords : Vector3 ){
 }
 
 function CreateCube( pos : Vector3 ) {
-	var cube : GameObject = Instantiate( CubePrefab );
+	var cube : GameObject = Instantiate( CubePrefab, Vector3.zero, Quaternion.identity );
 	cube.transform.position = pos;
 	cube.transform.parent = transform;
 	return cube;
