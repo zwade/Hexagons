@@ -2,7 +2,7 @@
 
 var CubePrefab	: GameObject;
 var cube_size	: float = 1;
-var grid_rows	: int 	= 5;
+var grid_size	: int 	= 5;
 var build_on_start : boolean = false;
 
 private var hex_size : float;
@@ -22,7 +22,8 @@ function Awake () {
 	hex_size = cube_size * Mathf.Sqrt(6) / 3;
 	DaGrid = HexGrid();
 	if (build_on_start) {
-		BuildTriangularGrid( grid_rows, DaGrid );
+		//BuildTriangularGrid( grid_rows, DaGrid );
+		BuildHexagonalGrid(grid_size, DaGrid);
 		OrientDiagonal();
 	}
 }
@@ -220,7 +221,7 @@ public class HexGrid{
 }
 
 function Update () {
-	if( Input.GetMouseButtonDown(0)) {
+	if( Input.GetMouseButtonDown(0) ) {
 		var mouseray : Ray = Camera.main.ScreenPointToRay( Input.mousePosition );
 		//Debug.Log( "mouse at " + Input.mousePosition.x +","+ Input.mousePosition.y );
 		Debug.Log( "ray at " + mouseray.origin.x + "," + mouseray.origin.y );
@@ -235,23 +236,24 @@ function Update () {
 		Debug.Log( "target:"+ target );
 		var suppPos : Vector2 = targCoords.getWorldAxisAlignedPosition(hex_size);
 		if(target != null){
-			target.renderer.material.color = Color.black;
+			//target.renderer.material.color = Color.black;
+			(target.GetComponent("DataCell") as DataCell).addVal(2);
 			var neighs : ArrayList = DaGrid.getExistingNeighborsOf( targCoords );
 			for (nee in neighs){
-				(GetCube(nee) as GameObject).renderer.material.color = Color.gray;
+				//(GetCube(nee) as GameObject).renderer.material.color = Color.gray;
+				((GetCube(nee) as GameObject).GetComponent("DataCell") as DataCell).addVal(1);
 			}
 		}
 	}
 	for( var hex : HexCoords in DaGrid.hextable.Keys ){
 			var huhPos : Vector2 = hex.getWorldAxisAlignedPosition(hex_size);
-			Debug.DrawLine( new Vector3(huhPos.x, huhPos.y, -3), new Vector3(huhPos.x, huhPos.y, 3), new Color(0, hex.r*1.0/grid_rows, 0) );
+			Debug.DrawLine( new Vector3(huhPos.x, huhPos.y, -3), new Vector3(huhPos.x, huhPos.y, 3), new Color(0, hex.r*1.0/grid_size, 0) );
 	}
 }
 
 function BuildTriangularGrid( rows : int, grid : HexGrid ) {
-	
-	var firstPos : Vector3 = transform.position;
-	var cubes : int = 0;
+	// deprecated and wonky
+	var cubecount : int = 0;
 	for( var row : int = 0; row < rows; row++ ) {
 		//z coordinate is the row
 		//x + y coordinates should sum to equal row
@@ -259,10 +261,15 @@ function BuildTriangularGrid( rows : int, grid : HexGrid ) {
 		for( var xshift : int = 0; xshift <= row; xshift++){
 			var yshift = row - xshift;
 			var tempcube : GameObject = CreateCubeInGrid( new Vector3( xshift, yshift, zshift )  );
-			tempcube.name = "Cube"+cubes;
-			cubes++;
+			tempcube.name = "Cube"+cubecount;
+			cubecount++;
 			grid.addHex( new HexCoords(xshift, yshift), tempcube );
 		}
+		
+		//oops. plane is not x+y+z = 0 D:
+			// x+y=z. 
+			// I'm kind of an idiot
+			//lets fix that
 		
 		//currently, hex grid is like this:
 		//axial
@@ -270,6 +277,22 @@ function BuildTriangularGrid( rows : int, grid : HexGrid ) {
 		//r is y coord
 		//+q runs straight right
 		//+r runs up to the right
+	}
+}
+
+function BuildHexagonalGrid( size : int, grid : HexGrid ){
+	var cubecount : int = 0;
+	for( var z : int = -size*2; z < size*2; z++){
+		for( var x : int = -size*2; x < size*2; x++){
+			var y = -(x + z);
+			if( Mathf.Abs(y) > size || Mathf.Abs(x) > size || Mathf.Abs(z) > size){
+				continue;
+			}
+			var tempcube : GameObject = CreateCubeInGrid( new Vector3( x, y, z )  );
+			tempcube.name = "Cube"+cubecount;
+			cubecount++;
+			grid.addHex( new HexCoords(x, y), tempcube );
+		}
 	}
 }
 
@@ -291,8 +314,8 @@ function GetCube( coords : HexCoords ){
 function OrientDiagonal(){
 	// we probably want to rotate the camera, not the cubes, in the end
 	// though it doesn't really matter right now
-	transform.RotateAround( transform.position, Vector3.up, 45 ); //[y axis by 45]
-	transform.RotateAround( transform.position, Vector3.right, -Mathf.Rad2Deg * Mathf.Atan(1/Mathf.Sqrt(2))  ); //[x axis by arctan(1/root(2)]
+	transform.RotateAround( transform.position, Vector3.up, -45 ); //[y axis by 45]
+	transform.RotateAround( transform.position, Vector3.right, Mathf.Rad2Deg * Mathf.Atan(1/Mathf.Sqrt(2))  ); //[x axis by arctan(1/root(2)]
 
 }	
 
