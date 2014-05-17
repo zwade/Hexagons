@@ -8,6 +8,9 @@ var build_on_start : boolean = false;
 private var hex_size : float;
 
 var DaGrid : HexGrid;
+var DahGrid: HexGrid;
+
+var numgrids : int = 0; 
 
 // [s] is the side length of the real cube
 // [size], side length of the projected hexagon,
@@ -19,10 +22,13 @@ var DaGrid : HexGrid;
 // multiple coordinate systems, see http://www.redblobgames.com/grids/hexagons/
 
 function Awake () {
-	hex_size = cube_size * Mathf.Sqrt(6) / 3;
-	DaGrid = HexGrid();
+	hex_size 	= cube_size * Mathf.Sqrt(6) / 3;
+	DaGrid		= HexGrid();
+	DahGrid		= HexGrid(); 
 	if (build_on_start) {
 		//BuildTriangularGrid( grid_rows, DaGrid );
+		BuildHexagonalGrid(grid_size, DahGrid);
+		OrientDiagonal();
 		BuildHexagonalGrid(grid_size, DaGrid);
 		OrientDiagonal();
 	}
@@ -217,21 +223,16 @@ public class HexGrid{
 			Debug.Log( item.Key +"\t:"+ item.Value);
 		}
 	}
-	
 }
 
 function Update () {
 	if( Input.GetMouseButtonDown(0) ) {
 		var mouseray : Ray = Camera.main.ScreenPointToRay( Input.mousePosition );
-		//Debug.Log( "mouse at " + Input.mousePosition.x +","+ Input.mousePosition.y );
-		Debug.Log( "ray at " + mouseray.origin.x + "," + mouseray.origin.y );
 		var floataxial : Vector2 = HexCoords.getAxialCoords(new Vector2(mouseray.origin.x, mouseray.origin.y), hex_size);
-		//Debug.Log( "axial coords: "+ floataxial);
 		var approxhex : HexCoords = HexCoords.roundToHex(floataxial);
 		Debug.Log( "closest hex: " + approxhex);
 		
 		var targCoords : HexCoords = approxhex;
-		targCoords.getWorldAxisAlignedPosition(hex_size);
 		var target : GameObject = GetCube( targCoords );
 		Debug.Log( "target:"+ target );
 		var suppPos : Vector2 = targCoords.getWorldAxisAlignedPosition(hex_size);
@@ -251,36 +252,11 @@ function Update () {
 	}
 }
 
-function BuildTriangularGrid( rows : int, grid : HexGrid ) {
-	// deprecated and wonky
-	var cubecount : int = 0;
-	for( var row : int = 0; row < rows; row++ ) {
-		//z coordinate is the row
-		//x + y coordinates should sum to equal row
-		var zshift = row;
-		for( var xshift : int = 0; xshift <= row; xshift++){
-			var yshift = row - xshift;
-			var tempcube : GameObject = CreateCubeInGrid( new Vector3( xshift, yshift, zshift )  );
-			tempcube.name = "Cube"+cubecount;
-			cubecount++;
-			grid.addHex( new HexCoords(xshift, yshift), tempcube );
-		}
-		
-		//oops. plane is not x+y+z = 0 D:
-			// x+y=z. 
-			// I'm kind of an idiot
-			//lets fix that
-		
-		//currently, hex grid is like this:
-		//axial
-		//q is x coord
-		//r is y coord
-		//+q runs straight right
-		//+r runs up to the right
-	}
-}
+//nom!
 
 function BuildHexagonalGrid( size : int, grid : HexGrid ){
+	//var gridContainer : GameObject = new GameObject("Grid Container", );
+
 	var cubecount : int = 0;
 	for( var z : int = -size*2; z < size*2; z++){
 		for( var x : int = -size*2; x < size*2; x++){
