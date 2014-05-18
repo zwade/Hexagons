@@ -4,12 +4,15 @@ var CubePrefab	: GameObject;
 var cube_size	: float = 1;
 var grid_size	: int 	= 5;
 var build_on_start : boolean = false;
+var curve		: AnimationCurve;
 
-private var hex_size : float;
+private var hex_size	: float;
+private var rotation_degrees : float;
+private var vectors		: Vector3[];
 
 var DahGrids : HexGrid[];
 
-var numgrids : int = 0; 
+var numgrids : int = 0;
 
 // [s] is the side length of the real cube
 // [size], side length of the projected hexagon,
@@ -291,6 +294,10 @@ function Update () {
 	if( Input.GetMouseButtonDown(1)){
 		OrientToFace( BOTTOM_LEFT );
 	}
+	if (rotation_degrees > 0) {
+		rotation_degrees -= curve.Evaluate((70.5-rotation_degrees)/70.5);
+		transform.RotateAround(vectors[0], vectors[1], -curve.Evaluate((70.5-rotation_degrees)/70.5));
+	}
 	
 	for( var hex : HexCoords in DahGrids[0].hextable.Keys ){
 			var huhPos : Vector2 = hex.getWorldAxisAlignedPosition(hex_size);
@@ -378,7 +385,8 @@ function OrientToFace( face : int ){
 			//should spin syster up and to the right, 30 degrees? 60?
 			
 			//evidently working not really but maybe!
-			transform.RotateAround(new Vector3(0, 0, Mathf.Sqrt(3)/2*8*hex_size*cube_size), new Vector3(-1, Mathf.Sqrt(3), 0), -70);
+			rotation_degrees += 70;
+			vectors = [new Vector3(0, 0, Mathf.Sqrt(3)/2*8*hex_size*cube_size), new Vector3(-1, Mathf.Sqrt(3), 0)];
 			//transform.RotateAround( transform.position, new Vector3(Mathf.Sqrt(3), -1, 0), 5 );
 			break;
 		default:
