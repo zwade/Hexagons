@@ -377,8 +377,9 @@ function OrientToFace( face : int ){
 			//rotate so the bottom left face is now flush
 			//should spin syster up and to the right, 30 degrees? 60?
 			
-			//evidently not working
-			transform.RotateAround( transform.position, new Vector3(Mathf.Sqrt(3), -1, 0), 5 );
+			//evidently working not really but maybe!
+			transform.RotateAround(new Vector3(0, 0, Mathf.Sqrt(3)/2*8*hex_size*cube_size), new Vector3(-1, Mathf.Sqrt(3), 0), -70);
+			//transform.RotateAround( transform.position, new Vector3(Mathf.Sqrt(3), -1, 0), 5 );
 			break;
 		default:
 			Debug.Log("unrecognized face");
