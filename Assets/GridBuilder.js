@@ -10,6 +10,8 @@ private var hex_size	: float;
 private var rotation_degrees : float;
 private var vectors		: Vector3[];
 
+var containers : GameObject[];
+
 var DahGrids : HexGrid[];
 
 var numgrids : int = 0;
@@ -27,11 +29,14 @@ function Awake () {
 	hex_size 	= cube_size * Mathf.Sqrt(6) / 3;
 	DahGrids = new HexGrid[2];
 	DahGrids[0]		= HexGrid();
-	DahGrids[1]		= HexGrid(); 
+	DahGrids[1]		= HexGrid();
+	
+	containers = new GameObject[2];
+	  
 	if (build_on_start) {
-		var container1 : GameObject = BuildHexagonalGridOnPlane(grid_size, DahGrids[0], new PlaneEquation(1, 1, 1));
-		var container2 : GameObject = BuildHexagonalGridOnPlane(grid_size, DahGrids[1], new PlaneEquation(1, 1, -1));
-		container2.transform.position.z +=  2*(grid_size) * cube_size;
+		containers[0] = BuildHexagonalGridOnPlane(grid_size, DahGrids[0], new PlaneEquation(1, 1, 1));
+		containers[1] = BuildHexagonalGridOnPlane(grid_size, DahGrids[1], new PlaneEquation(1, 1, -1));
+		containers[1].transform.position.z +=  2*(grid_size) * cube_size;
 		
 		OrientDiagonal();
 		//OrientToFace( BOTTOM_LEFT );
@@ -299,9 +304,18 @@ function Update () {
 		transform.RotateAround(vectors[0], vectors[1], -curve.Evaluate((70.5-rotation_degrees)/70.5));
 	}
 	
+	//marking the supposed centers of the hexagons in the first grid
 	for( var hex : HexCoords in DahGrids[0].hextable.Keys ){
 			var huhPos : Vector2 = hex.getWorldAxisAlignedPosition(hex_size);
 			Debug.DrawLine( new Vector3(huhPos.x, huhPos.y, -3), new Vector3(huhPos.x, huhPos.y, 3), new Color(0, hex.r*1.0/grid_size, 0) );
+	}
+	
+	//marking the centers of each grid with crosses
+	for (var gridcs in containers ){
+			var center : Vector3 = gridcs.transform.position;
+			Debug.DrawLine( new Vector3(center.x, center.y, center.z-4), new Vector3(center.x, center.y, center.z+4), Color.green);
+			Debug.DrawLine( new Vector3(center.x, center.y-4, center.z), new Vector3(center.x, center.y+4, center.z), Color.green);
+			Debug.DrawLine( new Vector3(center.x-4, center.y, center.z), new Vector3(center.x+4, center.y, center.z), Color.green);
 	}
 }
 
