@@ -1,0 +1,12 @@
+/** 
+* Convert a screen point to a hex coordinate
+*/
+public Coord PointToCoord(double x, double z) {
+x = (x - halfHexWidth) / hexWidth;
+
+double t1 = z / hexRadius, t2 = Math.Floor(x + t1);
+double r = Math.Floor((Math.Floor(t1 - x) + t2) / 3); 
+double q = Math.Floor((Math.Floor(2 * x + 1) + t2) / 3) - r;
+
+return new Coord((int) q, (int) r); 
+}

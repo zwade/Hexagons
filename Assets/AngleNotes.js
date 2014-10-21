@@ -11,8 +11,18 @@ angle between overlapping hex grids:
 
 
 
+
 ***/
 
+//1x + 1y + 1z = 0
+//1x + 1y - 1z = 0
+
+//<1, 1, 1>
+//<1, 1, -1>
+
+//angle = arccos( dotprod(a, b) / [ mag(a) * mag(B) ] )
+
+//angle between should be 109.4712206
 
 
 

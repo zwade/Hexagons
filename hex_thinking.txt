@@ -1,0 +1,37 @@
+you have this hex system
+coord1
+coord2
+coord3
+
+stored are coord1
+and coord2
+
+coord1 + coord2 + coord3 = 0
+
+how do you get a hexagon?
+
+coord1 from -hexsize to hexsize
+coord2 from -hexsize to hexsize
+
+does this give you all points in the hex?
+
+the answer is YES
+but it gives TOO MANY!
+
+   /\
+  /  \
+ /    \
+ \    /
+  \  /
+   \/
+
+you want
+
+   /-\
+  /   \
+  \   /
+   \-/
+
+
+too much hexagon per hexagon!
+gotem

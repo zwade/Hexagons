@@ -400,6 +400,10 @@ function OrientToFace( face : int ){
 			
 			//evidently working not really but maybe!
 			rotation_degrees += 70;
+			
+			var calced : int;
+			
+			
 			vectors = [new Vector3(0, 0, Mathf.Sqrt(3)/2*8*hex_size*cube_size), new Vector3(-1, Mathf.Sqrt(3), 0)];
 			//transform.RotateAround( transform.position, new Vector3(Mathf.Sqrt(3), -1, 0), 5 );
 			break;
