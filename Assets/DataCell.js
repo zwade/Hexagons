@@ -14,7 +14,7 @@ function Awake () {
 function Update () {
 	var scaledval : float = (val - MINVAL) / (MAXVAL - MINVAL); //zero to one
 	var lerpcolor : Color = Color.Lerp( mincolor, maxcolor, scaledval );
-	renderer.material.color = lerpcolor;
+	GetComponent.<Renderer>().material.color = lerpcolor;
 }
 
 function maxOut(){
